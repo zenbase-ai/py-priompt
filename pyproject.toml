@@ -5,6 +5,10 @@ description = "Priompt (priority + prompt) is prompting library. It uses priorit
 authors = [{ name = "Cyrus Nouroozi", email = "cyrus@zenbase.ai" }]
 dependencies = [
     "sorcery>=0.2.2",
+    "tiktoken>=0.8.0",
+    "openai>=1.55.1",
+    "pyyaml>=6.0.2",
+    "ujson>=5.10.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

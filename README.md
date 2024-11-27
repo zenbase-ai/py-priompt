@@ -21,34 +21,55 @@ Prompts are rendered from a Python component, which can look something like this
 
 ```python
 from priompt import (
-  component,
-  SystemMessage,
-  Scope,
-  UserMessage,
-  Empty,
-  PromptElement,
+  component, # Decorator for custom components
+  # Standard components
+  SystemMessage, # For system messages
+  AssistantMessage, # For assistant messages
+  UserMessage, # For user messages
+  # Priompt components
+  Empty, # For reserving empty space
+  Scope, # For setting priorities
+  # For rendering prompts to OpenAI chat messages or a string
+  render,
+  O200KTokenizer, # For GPT-4o, GPT-4o-mini
 )
 
 @component
-def example_prompt(
-    name: str,
-    message: str,
-    history: list[dict[str, str]],
-) -> PromptElement:
+def chat(name: str, message: str, history: list[dict[str, str]]):
     capitalized_name = name[0].upper() + name[1:]
 
     return [
         SystemMessage(f"The user's name is {capitalized_name}. Please respond to them kindly."),
         *[
             Scope(
-                UserMessage(m["message"]) if m["case"] == "user" else AssistantMessage(m["message"]),
-                prel=-(len(history) - i),
+                UserMessage(m["message"]) if m["role"] == "user" else AssistantMessage(m["message"]),
+                prel=i,
             )
             for i, m in enumerate(history)
         ],
         UserMessage(message),
         Empty(1000),
     ]
+
+messages = render(
+    chat(
+        name="cyrus",
+        message="What is the answer to life, the universe, and everything?",
+        history=[
+            {"role": "user", "message": "Hello!"},
+            {"role": "assistant", "message": "Hello! How can I help you today?"},
+        ],
+    ),
+    {
+        "token_limit": 8192, # However many tokens you want to limit to
+        "tokenizer": O200KTokenizer,
+    }
+)
+
+openai.chat.completions.create(
+    ...
+    messages=messages,
+)
 ```
 
 A component is rendered only once. Each child has a priority, where a higher priority means that the child is more important to include in the prompt. If no priority is specified, the child is included if and only if its parent is included. Absolute priorities are specified with `p` and relative ones are specified with `prel`.

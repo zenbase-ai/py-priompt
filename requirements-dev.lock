@@ -14,15 +14,26 @@ attrs==24.2.0
     # via hypothesis
 beartype==0.19.0
     # via priompt
+cachetools==5.5.0
+    # via tox
 certifi==2024.8.30
     # via requests
+chardet==5.2.0
+    # via tox
 charset-normalizer==3.4.0
     # via requests
+colorama==0.4.6
+    # via tox
 decorator==5.1.1
     # via ipdb
     # via ipython
+distlib==0.3.9
+    # via virtualenv
 executing==2.1.0
     # via stack-data
+filelock==3.16.1
+    # via tox
+    # via virtualenv
 hypothesis==6.119.4
 idna==3.10
     # via requests
@@ -36,13 +47,19 @@ jedi==0.19.2
 matplotlib-inline==0.1.7
     # via ipython
 packaging==24.2
+    # via pyproject-api
     # via pytest
+    # via tox
 parso==0.8.4
     # via jedi
 pexpect==4.9.0
     # via ipython
+platformdirs==4.3.6
+    # via tox
+    # via virtualenv
 pluggy==1.5.0
     # via pytest
+    # via tox
 prompt-toolkit==3.0.48
     # via ipython
 ptyprocess==0.7.0
@@ -51,6 +68,8 @@ pure-eval==0.2.3
     # via stack-data
 pygments==2.18.0
     # via ipython
+pyproject-api==1.8.0
+    # via tox
 pytest==8.3.3
     # via pytest-asyncio
     # via syrupy
@@ -70,6 +89,7 @@ stack-data==0.6.3
 syrupy==4.8.0
 tiktoken==0.8.0
     # via priompt
+tox==4.23.2
 traitlets==5.14.3
     # via ipython
     # via matplotlib-inline
@@ -79,5 +99,7 @@ ujson==5.10.0
     # via priompt
 urllib3==2.2.3
     # via requests
+virtualenv==20.28.0
+    # via tox
 wcwidth==0.2.13
     # via prompt-toolkit

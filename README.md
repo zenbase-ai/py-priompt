@@ -2,7 +2,7 @@
 
 PyPriompt (_Python + priority + prompt_) is a Python port of the [Priompt](https://github.com/anysphere/priompt) library. It uses priorities to decide what to include in the context window.
 
-Priompt is an attempt at a _prompt design_ library, inspired by web design libraries like React. Read more about the motivation [here](https://arvid.xyz/prompt-design).
+Priompt is an attempt at a _prompt design_ library, inspired by web design libraries like React and FastHTML. Read more about the motivation [here](https://arvid.xyz/prompt-design).
 
 _Note: Although the original test suite passes, this was ported in a day with the help of Cursor AI, so there may be bugs. Please open an issue if you find any!_
 
@@ -69,7 +69,7 @@ The building blocks of a priompt prompt are:
 6. `Br`: force a token break at a particular location, which is useful for ensuring exact tokenization matches between two parts of a prompt (e.g. when implementing something like speculative edits).
 7. `Config`: specify a few common configuration properties, such as `stop` token and `maxResponseTokens`, which can make the priompt dump more self-contained and help with evals.
 
-You can create components all you want, just like in React. The builtin components are:
+You can create components all you want, just like in FastHTML. The builtin components are:
 
 1. `UserMessage`, `AssistantMessage` and `SystemMessage`: for building message-based prompts.
 2. `Image`: for adding images into the prompt.

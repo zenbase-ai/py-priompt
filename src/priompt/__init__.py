@@ -13,6 +13,5 @@ from .types import (
     ChatAndFunctionPromptFunction,
     ChatPrompt,
     PreviewConfig,
-    SynchronousPreviewConfig,
     SourceMap,
 )

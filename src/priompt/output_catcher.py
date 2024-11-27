@@ -47,7 +47,3 @@ class OutputCatcher(Generic[T]):
         elif self.no_priority_outputs:
             return self.no_priority_outputs[0]["output"]
         return None
-
-
-def NewOutputCatcher() -> OutputCatcher[T]:
-    return OutputCatcher[T]()

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .types import (
         PromptElement,
         ImageProps,
+        PromptProps,
         OutputHandler,
         ChatCompletionResponseMessage,
         StreamChatCompletionResponse,
@@ -16,49 +17,90 @@ if TYPE_CHECKING:
 
 
 def SystemMessage(
+    *args: Union[List[PromptElement], PromptElement],
     children: Optional[Union[List[PromptElement], PromptElement]] = None,
     name: Optional[str] = None,
     to: Optional[str] = None,
+    p: Optional[float] = None,
+    prel: Optional[float] = None,
+    on_eject: Optional[Callable[[], None]] = None,
+    on_include: Optional[Callable[[], None]] = None,
 ) -> PromptElement:
-    return {
+    message: Dict[str, Any] = {
         "type": "chat",
         "role": "system",
         "name": name,
         "to": to,
-        "children": to_children(children),
+        "children": to_children(args[0] if args else children),
     }
+    if p is not None:
+        message["p"] = p
+    if prel is not None:
+        message["prel"] = prel
+    if on_eject is not None:
+        message["on_eject"] = on_eject
+    if on_include is not None:
+        message["on_include"] = on_include
+    return message
 
 
 def UserMessage(
+    *args: Union[List[PromptElement], PromptElement],
     children: Optional[Union[List[PromptElement], PromptElement]] = None,
     name: Optional[str] = None,
     to: Optional[str] = None,
+    p: Optional[float] = None,
+    prel: Optional[float] = None,
+    on_eject: Optional[Callable[[], None]] = None,
+    on_include: Optional[Callable[[], None]] = None,
 ) -> PromptElement:
-    return {
+    message: Dict[str, Any] = {
         "type": "chat",
         "role": "user",
         "name": name,
         "to": to,
-        "children": to_children(children),
+        "children": to_children(args[0] if args else children),
     }
+    if p is not None:
+        message["p"] = p
+    if prel is not None:
+        message["prel"] = prel
+    if on_eject is not None:
+        message["on_eject"] = on_eject
+    if on_include is not None:
+        message["on_include"] = on_include
+    return message
 
 
 def AssistantMessage(
+    *args: Union[List[PromptElement], PromptElement],
     children: Optional[Union[List[PromptElement], PromptElement]] = None,
     function_call: Optional[Dict[str, str]] = None,
     tool_calls: Optional[List[Dict[str, Any]]] = None,
     to: Optional[str] = None,
+    p: Optional[float] = None,
+    prel: Optional[float] = None,
+    on_eject: Optional[Callable[[], None]] = None,
+    on_include: Optional[Callable[[], None]] = None,
 ) -> PromptElement:
     message: Dict[str, Any] = {
         "type": "chat",
         "role": "assistant",
         "to": to,
-        "children": to_children(children),
+        "children": to_children(args[0] if args else children),
     }
     if function_call:
         message["function_call"] = function_call
     if tool_calls:
         message["tool_calls"] = tool_calls
+    if p is not None:
+        message["p"] = p
+    if prel is not None:
+        message["prel"] = prel
+    if on_eject is not None:
+        message["on_eject"] = on_eject
+    if on_include is not None:
+        message["on_include"] = on_include
     return message
 
 
@@ -73,30 +115,58 @@ def ImageComponent(props: ImageProps) -> PromptElement:
 
 def FunctionMessage(
     name: str,
+    *args: Union[List[PromptElement], PromptElement],
     children: Optional[Union[List[PromptElement], PromptElement]] = None,
     to: Optional[str] = None,
+    p: Optional[float] = None,
+    prel: Optional[float] = None,
+    on_eject: Optional[Callable[[], None]] = None,
+    on_include: Optional[Callable[[], None]] = None,
 ) -> PromptElement:
-    return {
+    message: Dict[str, Any] = {
         "type": "chat",
         "role": "function",
         "name": name,
         "to": to,
-        "children": to_children(children),
+        "children": to_children(args[0] if args else children),
     }
+    if p is not None:
+        message["p"] = p
+    if prel is not None:
+        message["prel"] = prel
+    if on_eject is not None:
+        message["on_eject"] = on_eject
+    if on_include is not None:
+        message["on_include"] = on_include
+    return message
 
 
 def ToolResultMessage(
     name: str,
+    *args: Union[List[PromptElement], PromptElement],
     children: Optional[Union[List[PromptElement], PromptElement]] = None,
     to: Optional[str] = None,
+    p: Optional[float] = None,
+    prel: Optional[float] = None,
+    on_eject: Optional[Callable[[], None]] = None,
+    on_include: Optional[Callable[[], None]] = None,
 ) -> PromptElement:
-    return {
+    message: Dict[str, Any] = {
         "type": "chat",
         "role": "tool",
         "name": name,
         "to": to,
-        "children": to_children(children),
+        "children": to_children(args[0] if args else children),
     }
+    if p is not None:
+        message["p"] = p
+    if prel is not None:
+        message["prel"] = prel
+    if on_eject is not None:
+        message["on_eject"] = on_eject
+    if on_include is not None:
+        message["on_include"] = on_include
+    return message
 
 
 def to_children(

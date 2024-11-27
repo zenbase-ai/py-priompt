@@ -24,6 +24,7 @@ dev-dependencies = [
     "ipython>=8.29.0",
     "syrupy>=4.8.0",
     "hypothesis>=6.119.4",
+    "pytest-asyncio>=0.24.0",
 ]
 
 [tool.hatch.metadata]

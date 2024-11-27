@@ -79,7 +79,9 @@ pydantic-core==2.27.1
 pygments==2.18.0
     # via ipython
 pytest==8.3.3
+    # via pytest-asyncio
     # via syrupy
+pytest-asyncio==0.24.0
 pyyaml==6.0.2
     # via priompt
 regex==2024.11.6

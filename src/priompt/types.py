@@ -19,9 +19,9 @@ if TYPE_CHECKING:
     from .openai import ChatCompletionResponseMessage, StreamChatCompletionResponse
     from .tokenizer import PriomptTokenizer
 
-T = TypeVar("T")
-PropsT = TypeVar("PropsT", bound=Dict[str, Any])
+T = TypeVar("T", bound=Dict[str, Any])
 ReturnT = TypeVar("ReturnT")
+PropsT = TypeVar("PropsT", bound=Dict[str, Any])
 
 # JSON Schema type (simplified)
 JSONSchema7: TypeAlias = Dict
@@ -186,17 +186,32 @@ Node = Union[
 PromptElement = Union[List[Node], Node]
 
 
-class BaseProps(TypedDict):
-    p: NotRequired[int]  # absolute priority
-    prel: NotRequired[int]  # relative priority
-    name: NotRequired[str]
-    children: NotRequired[Union[List[PromptElement], PromptElement]]
-    on_eject: NotRequired[Callable[[], None]]
-    on_include: NotRequired[Callable[[], None]]
+class BaseProps(TypedDict, total=False):
+    """Base properties for prompt elements."""
+
+    p: float  # absolute priority, max 1e6
+    prel: float  # relative priority
+    name: str  # label for debugging purposes
+    children: Union["PromptElement", List["PromptElement"]]
+    on_eject: Callable[[], None]
+    on_include: Callable[[], None]
 
 
-class ReturnProps(TypedDict, Generic[T]):
-    on_return: OutputHandler[T]
+class ReturnProps(TypedDict, Generic[ReturnT]):
+    """Properties for handling return values."""
+
+    on_return: OutputHandler[ReturnT]
+
+
+class PromptProps(BaseProps, Generic[PropsT, ReturnT]):
+    """
+    Combined prompt properties with optional type parameters.
+    T: Additional properties type (defaults to empty dict)
+    ReturnT: Return type for on_return handler (defaults to Never/NoReturn)
+    """
+
+    props: NotRequired[PropsT]  # Additional type-specific properties
+    on_return: NotRequired[OutputHandler[ReturnT]]  # Return handler
 
 
 # Chat message types
@@ -310,11 +325,6 @@ RenderedPrompt = Union[
 ]
 
 
-class PromptProps(TypedDict, Generic[PropsT, ReturnT]):
-    props: PropsT
-    on_return: NotRequired[OutputHandler[ReturnT]]
-
-
 class Prompt(Generic[PropsT, ReturnT]):
     config: Optional[PreviewConfig[PropsT, ReturnT]]
 
@@ -323,25 +333,11 @@ class Prompt(Generic[PropsT, ReturnT]):
     ) -> Union[PromptElement, AsyncIterable[PromptElement]]: ...
 
 
-class SynchronousPrompt(Generic[PropsT, ReturnT]):
-    config: Optional[SynchronousPreviewConfig[PropsT, ReturnT]]
-
-    def __call__(self, props: PromptProps[PropsT, ReturnT]) -> PromptElement: ...
-
-
 class PreviewConfig(TypedDict, Generic[PropsT, ReturnT]):
     id: str
     prompt: Prompt[PropsT, ReturnT]
     dump: NotRequired[Callable[[PropsT], str]]
     hydrate: NotRequired[Callable[[str], PropsT]]
-
-
-class SynchronousPreviewConfig(TypedDict, Generic[PropsT, ReturnT]):
-    id: str
-    prompt: SynchronousPrompt[PropsT, ReturnT]
-    dump: NotRequired[Callable[[PropsT], str]]
-    hydrate: NotRequired[Callable[[str], PropsT]]
-    dump_extension: NotRequired[str]
 
 
 class RenderOptions(TypedDict):

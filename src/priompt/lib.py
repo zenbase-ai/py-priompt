@@ -1047,3 +1047,47 @@ def prompt_to_openai_chat_request(prompt: RenderedPrompt) -> Dict[str, Any]:
         "tools": tools,
         "tool_choice": "auto" if tools and len(tools) > 0 else None,
     }
+
+
+def prompt_to_string_VULNERABLE_TO_PROMPT_INJECTION(
+    prompt: RenderedPrompt,
+    tokenizer: PriomptTokenizer,
+) -> str:
+    """
+    Convert a prompt to string format. WARNING: Vulnerable to prompt injection!
+    Do not use unless necessary as context (e.g. scraped docs) could include <|im_end|> strings and mess up the prompt.
+    Also does not have <breaktoken> support.
+    """
+    if is_plain_prompt(prompt):
+        # Encode as plain prompt
+        if isinstance(prompt, list):
+            return "".join(prompt)
+        return prompt
+
+    elif is_chat_prompt(prompt):
+        parts = []
+        for msg in prompt["messages"]:
+            if msg["role"] == "function":
+                raise ValueError(
+                    "BUG!! promptToString got a chat prompt with a function message, which is not supported yet!"
+                )
+            elif msg["role"] == "assistant" and "function_call" in msg:
+                raise ValueError(
+                    "BUG!! promptToString got a chat prompt with a function message, which is not supported yet!"
+                )
+            else:
+                header_tokens = tokenizer.get_header_string_for_message(msg)
+                if isinstance(msg.get("content"), list):
+                    # Combine tokens to string array to handle images
+                    new_content = "".join(str(c) for c in msg["content"] if isinstance(c, str))
+                else:
+                    new_content = msg.get("content", "")
+
+                parts.append(
+                    header_tokens
+                    + prompt_to_string_VULNERABLE_TO_PROMPT_INJECTION(new_content, tokenizer)
+                )
+
+        return tokenizer.get_eos_token().join(parts)
+
+    raise ValueError("BUG!! promptToString got an invalid prompt")

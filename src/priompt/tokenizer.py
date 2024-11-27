@@ -39,109 +39,6 @@ UsableTokenizer: TypeAlias = Literal[
 OpenAIMessageRole: TypeAlias = Literal["system", "user", "assistant", "tool"]
 
 
-class PriomptTokenizer(ABC):
-    name: str
-    should_add_eos_token_to_each_message: bool
-
-    @classmethod
-    @abstractmethod
-    def encode_tokens(cls, text: str) -> List[int]: ...
-
-    @classmethod
-    @abstractmethod
-    def decode_tokens(cls, tokens: List[int]) -> str: ...
-
-    @classmethod
-    @abstractmethod
-    def num_tokens(cls, text: str) -> int: ...
-
-    @classmethod
-    def estimate_tokens_fast(cls, text: str) -> int:
-        return cls.estimate_tokens_using_char_count(text)[1]
-
-    @classmethod
-    @abstractmethod
-    def estimate_tokens_using_char_count(cls, text: str) -> Tuple[int, int]: ...
-
-    @classmethod
-    @abstractmethod
-    def get_header_string_for_message(cls, message: Dict) -> str: ...
-
-    @classmethod
-    @abstractmethod
-    def get_header_tokens_for_message(cls, message: Dict) -> List[int]: ...
-
-    @classmethod
-    @abstractmethod
-    def get_eos_token_id(cls) -> int: ...
-
-    @classmethod
-    @abstractmethod
-    def get_eos_token(cls) -> str: ...
-
-    @classmethod
-    @abstractmethod
-    def apply_chat_template(
-        cls,
-        messages: List[Dict],
-        options: Optional[Dict] = None,
-    ) -> str: ...
-
-    @classmethod
-    @abstractmethod
-    def apply_chat_template_tokens(
-        cls,
-        messages: List[Dict],
-        options: Optional[Dict] = None,
-    ) -> List[int]: ...
-
-
-def content_array_to_string_content(content: List[Union[str, "PromptContent"]]) -> List[str]:
-    new_content: List[str] = []
-    for c in content:
-        if isinstance(c, str):
-            new_content.append(c)
-        elif isinstance(c, dict) and c.get("type") == "text":
-            new_content.append(c["text"])
-        elif isinstance(c, dict) and c.get("type") == "image_url":
-            # Do nothing with images
-            pass
-    return new_content
-
-
-def openai_chat_messages_to_prompt(messages: List[Dict], tokenizer: UsableTokenizer) -> str:
-    if tokenizer not in [
-        "o200k_base",
-        "cl100k_base",
-        "cl100k_base_special_tokens",
-        "o200k_base_special_tokens",
-    ]:
-        raise ValueError(
-            f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base, and cl100k_base_special_tokens tokenizers are supported."
-        )
-
-    parts = []
-    for i, msg in enumerate(messages):
-        header_string = openai_get_header_string_for_message(msg, tokenizer)
-        if isinstance(msg["content"], list):
-            new_content = "".join(content_array_to_string_content(msg["content"]))
-        else:
-            new_content = msg["content"]
-
-        if i != 0:
-            # OpenAI always adds the eos token before every non-starting message
-            end_token_string = (
-                O200K_END_TOKEN_STRING
-                if tokenizer in ["o200k_base", "o200k_base_special_tokens"]
-                else CL100K_END_TOKEN_STRING
-            )
-            parts.append(end_token_string + header_string + new_content)
-        else:
-            parts.append(header_string + new_content)
-
-    return "".join(parts)
-
-
 # Constants for tokens
 CL100K_SYSTEM_TOKENS = [100264, 9125, 100266]
 CL100K_USER_TOKENS = [100264, 882, 100266]
@@ -166,15 +63,49 @@ O200K_ASSISTANT_TOKENS_STRING = "<|im_start|>assistant<|im_sep|>"
 O200K_END_TOKEN_STRING = "<|im_end|>"
 
 
-def openai_get_header_string_for_message(message: Dict, tokenizer: UsableTokenizer) -> str:
-    if tokenizer not in {
-        "o200k_base",
-        "cl100k_base",
-        "cl100k_base_special_tokens",
-        "o200k_base_special_tokens",
-    }:
+def content_array_to_string_content(content: List[Union[str, "PromptContent"]]) -> List[str]:
+    new_content: List[str] = []
+    for c in content:
+        if isinstance(c, str):
+            new_content.append(c)
+        elif isinstance(c, dict) and c.get("type") == "text":
+            new_content.append(c["text"])
+        elif isinstance(c, dict) and c.get("type") == "image_url":
+            # Do nothing with images
+            pass
+    return new_content
+
+
+def openai_chat_messages_to_prompt(messages: List[Dict], tokenizer: UsableTokenizer) -> str:
+    if tokenizer not in ("o200k_base", "cl100k_base"):
         raise ValueError(
-            f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base, and cl100k_base_special_tokens tokenizers are supported."
+            f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base tokenizers are supported."
+        )
+
+    parts = []
+    for i, msg in enumerate(messages):
+        header_string = openai_get_header_string_for_message(msg, tokenizer)
+        if isinstance(msg["content"], list):
+            new_content = "".join(content_array_to_string_content(msg["content"]))
+        else:
+            new_content = msg["content"]
+
+        if i != 0:
+            # OpenAI always adds the eos token before every non-starting message
+            end_token_string = (
+                O200K_END_TOKEN_STRING if tokenizer.startswith("o200k") else CL100K_END_TOKEN_STRING
+            )
+            parts.append(end_token_string + header_string + new_content)
+        else:
+            parts.append(header_string + new_content)
+
+    return "".join(parts)
+
+
+def openai_get_header_string_for_message(message: Dict, tokenizer: UsableTokenizer) -> str:
+    if tokenizer not in ("o200k_base", "cl100k_base"):
+        raise ValueError(
+            f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base tokenizers are supported."
         )
 
     header_string = ""
@@ -182,26 +113,22 @@ def openai_get_header_string_for_message(message: Dict, tokenizer: UsableTokeniz
     if role == "system":
         header_string = (
             O200K_SYSTEM_TOKENS_STRING
-            if tokenizer in ["o200k_base", "o200k_base_special_tokens"]
+            if tokenizer.startswith("o200k")
             else CL100K_SYSTEM_TOKENS_STRING
         )
     elif role == "user":
         header_string = (
-            O200K_USER_TOKENS_STRING
-            if tokenizer in ["o200k_base", "o200k_base_special_tokens"]
-            else CL100K_USER_TOKENS_STRING
+            O200K_USER_TOKENS_STRING if tokenizer.startswith("o200k") else CL100K_USER_TOKENS_STRING
         )
     elif role == "assistant":
         header_string = (
             O200K_ASSISTANT_TOKENS_STRING
-            if tokenizer in ["o200k_base", "o200k_base_special_tokens"]
+            if tokenizer.startswith("o200k")
             else CL100K_ASSISTANT_TOKENS_STRING
         )
     elif role == "tool":
         header_string = (
-            O200K_TOOL_TOKENS_STRING
-            if tokenizer in ["o200k_base", "o200k_base_special_tokens"]
-            else CL100K_USER_TOKENS_STRING
+            O200K_TOOL_TOKENS_STRING if tokenizer.startswith("o200k") else CL100K_USER_TOKENS_STRING
         )
     else:
         raise ValueError(f"Unknown role {role}")
@@ -266,67 +193,35 @@ def apply_codestral_chat_template(messages: List[Dict], options: Optional[Dict] 
 
 def encode_tokens(text: str, opts: Dict[str, UsableTokenizer]) -> List[int]:
     tokenizer_name = opts["tokenizer"]
-    encoding = None
 
-    if tokenizer_name == "cl100k_base":
-        encoding = tiktoken.get_encoding("cl100k_base")
-        return encoding.encode(text, disallowed_special=())
-    elif tokenizer_name == "cl100k_base_special_tokens":
-        encoding = tiktoken.get_encoding("cl100k_base")
-        return encoding.encode(text)
-    elif tokenizer_name == "o200k_base":
-        encoding = tiktoken.get_encoding("o200k_base")
-        return encoding.encode(text, disallowed_special=())
-    elif tokenizer_name == "o200k_base_special_tokens":
-        encoding = tiktoken.get_encoding("o200k_base")
-        return encoding.encode(text)
-    else:
+    if tokenizer_name not in ("cl100k_base", "o200k_base"):
         raise ValueError(f"Unknown tokenizer {tokenizer_name}")
+
+    return tiktoken.get_encoding(tokenizer_name).encode(text, disallowed_special=())
 
 
 def decode_tokens(tokens: List[int], opts: Dict[str, UsableTokenizer]) -> str:
     tokenizer_name = opts["tokenizer"]
-    encoding = None
 
-    if tokenizer_name in ("cl100k_base", "cl100k_base_special_tokens"):
-        encoding = tiktoken.get_encoding("cl100k_base")
-    elif tokenizer_name in ("o200k_base", "o200k_base_special_tokens"):
-        encoding = tiktoken.get_encoding("o200k_base")
-    else:
+    if tokenizer_name not in ("cl100k_base", "o200k_base"):
         raise ValueError(f"Unknown tokenizer {tokenizer_name}")
 
-    return encoding.decode(tokens)
+    return tiktoken.get_encoding(tokenizer_name).decode(tokens)
 
 
 def num_tokens(text: str, opts: Dict[str, UsableTokenizer]) -> int:
     tokenizer_name = opts["tokenizer"]
-    encoding = None
 
-    if tokenizer_name == "cl100k_base":
-        encoding = tiktoken.get_encoding("cl100k_base")
-        return len(encoding.encode(text, disallowed_special=()))
-    elif tokenizer_name == "cl100k_base_special_tokens":
-        encoding = tiktoken.get_encoding("cl100k_base")
-        return len(encoding.encode(text))
-    elif tokenizer_name == "o200k_base":
-        encoding = tiktoken.get_encoding("o200k_base")
-        return len(encoding.encode(text, disallowed_special=()))
-    elif tokenizer_name == "o200k_base_special_tokens":
-        encoding = tiktoken.get_encoding("o200k_base")
-        return len(encoding.encode(text))
-    else:
+    if tokenizer_name not in ("cl100k_base", "o200k_base"):
         raise ValueError(f"Unknown tokenizer {tokenizer_name}")
+
+    return len(tiktoken.get_encoding(tokenizer_name).encode(text, disallowed_special=()))
 
 
 def estimate_tokens_using_bytecount(text: str, tokenizer: UsableTokenizer) -> Tuple[int, int]:
     """Returns a very conservative [lower, upper] bound on the number of tokens"""
     byte_length = len(text.encode("utf-8"))
-    if tokenizer in (
-        "cl100k_base",
-        "cl100k_base_special_tokens",
-        "o200k_base",
-        "o200k_base_special_tokens",
-    ):
+    if tokenizer in ("cl100k_base", "o200k_base"):
         return (int(byte_length / 10), int(byte_length / 2.5))
     # conservative!
     return (int(byte_length / 10), int(byte_length / 2))
@@ -335,12 +230,7 @@ def estimate_tokens_using_bytecount(text: str, tokenizer: UsableTokenizer) -> Tu
 def estimate_tokens_using_charcount(text: str, tokenizer: UsableTokenizer) -> Tuple[int, int]:
     """Returns a very conservative [lower, upper] bound on the number of tokens"""
     length = len(text)
-    if tokenizer in (
-        "cl100k_base",
-        "cl100k_base_special_tokens",
-        "o200k_base",
-        "o200k_base_special_tokens",
-    ):
+    if tokenizer in ("cl100k_base", "o200k_base"):
         return (int(length / 10), int(length / 1.5))
     # conservative!
     return (int(length / 10), length)
@@ -371,14 +261,9 @@ def num_tokens_for_image(dimensions: Dict[str, int], detail: Literal["low", "hig
 
 
 def openai_get_header_tokens_for_message(message: Dict, tokenizer: UsableTokenizer) -> List[int]:
-    if tokenizer not in {
-        "o200k_base",
-        "cl100k_base",
-        "cl100k_base_special_tokens",
-        "o200k_base_special_tokens",
-    }:
+    if tokenizer not in ("o200k_base", "cl100k_base"):
         raise ValueError(
-            f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base, and cl100k_base_special_tokens tokenizers are supported."
+            f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base tokenizers are supported."
         )
 
     header_tokens: List[int]
@@ -395,9 +280,7 @@ def openai_get_header_tokens_for_message(message: Dict, tokenizer: UsableTokeniz
         raise ValueError(f"Unknown role {role}")
 
     o200k_tokens, cl100k_tokens = role_tokens_map[role]
-    header_tokens = (
-        o200k_tokens if tokenizer in ["o200k_base", "o200k_base_special_tokens"] else cl100k_tokens
-    )
+    header_tokens = o200k_tokens if tokenizer.startswith("o200k") else cl100k_tokens
 
     if "name" in message and message["name"] is not None:
         header_tokens = inject_name(header_tokens, message["name"], tokenizer)
@@ -407,15 +290,13 @@ def openai_get_header_tokens_for_message(message: Dict, tokenizer: UsableTokeniz
 
 
 def openai_chat_messages_to_tokens(messages: List[Dict], tokenizer: UsableTokenizer) -> List[int]:
-    if tokenizer not in {
-        "o200k_base",
-        "cl100k_base",
-        "cl100k_base_special_tokens",
-        "o200k_base_special_tokens",
-    }:
+    if tokenizer not in ("o200k_base", "cl100k_base"):
         raise ValueError(
             f"Invalid tokenizer: {tokenizer}. Only o200k_base, cl100k_base, and cl100k_base_special_tokens tokenizers are supported."
         )
+
+    # OpenAI always adds the eos token before every non-starting message
+    eos_token = O200K_END_TOKEN if tokenizer.startswith("o200k") else CL100K_END_TOKEN
 
     result_tokens: List[int] = []
     for i, msg in enumerate(messages):
@@ -431,13 +312,7 @@ def openai_chat_messages_to_tokens(messages: List[Dict], tokenizer: UsableTokeni
             content_tokens = encode_tokens(msg["content"], {"tokenizer": tokenizer})
 
         if i != 0:
-            # OpenAI always adds the eos token before every non-starting message
-            eos_token = (
-                O200K_END_TOKEN
-                if tokenizer in ["o200k_base", "o200k_base_special_tokens"]
-                else CL100K_END_TOKEN
-            )
-            result_tokens.extend([eos_token])
+            result_tokens.append(eos_token)
 
         result_tokens.extend(header_tokens)
         result_tokens.extend(content_tokens)
@@ -445,11 +320,9 @@ def openai_chat_messages_to_tokens(messages: List[Dict], tokenizer: UsableTokeni
     return result_tokens
 
 
-def get_tokenizer_by_name_only_for_openai_tokenizers(name: UsableTokenizer) -> PriomptTokenizer:
+def get_tokenizer_by_name_only_for_openai_tokenizers(name: UsableTokenizer) -> "PriomptTokenizer":
     if name == "cl100k_base":
         return CL100KTokenizer()
-    elif name == "cl100k_base_special_tokens":
-        return CL100KSpecialTokensTokenizer()
     elif name == "o200k_base":
         return O200KTokenizer()
     elif name == "codestral":
@@ -458,55 +331,65 @@ def get_tokenizer_by_name_only_for_openai_tokenizers(name: UsableTokenizer) -> P
         raise ValueError(f"Unknown tokenizer {name}")
 
 
+class PriomptTokenizer(ABC):
+    name: str
+    should_add_eos_token_to_each_message: bool
+
+    @classmethod
+    @abstractmethod
+    def encode_tokens(cls, text: str) -> List[int]: ...
+
+    @classmethod
+    @abstractmethod
+    def decode_tokens(cls, tokens: List[int]) -> str: ...
+
+    @classmethod
+    @abstractmethod
+    def num_tokens(cls, text: str) -> int: ...
+
+    @classmethod
+    def estimate_tokens_fast(cls, text: str) -> int:
+        return cls.estimate_tokens_using_char_count(text)[1]
+
+    @classmethod
+    @abstractmethod
+    def estimate_tokens_using_char_count(cls, text: str) -> Tuple[int, int]: ...
+
+    @classmethod
+    @abstractmethod
+    def get_header_string_for_message(cls, message: Dict) -> str: ...
+
+    @classmethod
+    @abstractmethod
+    def get_header_tokens_for_message(cls, message: Dict) -> List[int]: ...
+
+    @classmethod
+    @abstractmethod
+    def get_eos_token_id(cls) -> int: ...
+
+    @classmethod
+    @abstractmethod
+    def get_eos_token(cls) -> str: ...
+
+    @classmethod
+    @abstractmethod
+    def apply_chat_template(
+        cls,
+        messages: List[Dict],
+        options: Optional[Dict] = None,
+    ) -> str: ...
+
+    @classmethod
+    @abstractmethod
+    def apply_chat_template_tokens(
+        cls,
+        messages: List[Dict],
+        options: Optional[Dict] = None,
+    ) -> List[int]: ...
+
+
 class CL100KTokenizer(PriomptTokenizer):
     name = "cl100k_base"
-    should_add_eos_token_to_each_message = True
-
-    @classmethod
-    def encode_tokens(cls, text: str) -> List[int]:
-        return encode_tokens(text, {"tokenizer": cls.name})
-
-    @classmethod
-    def decode_tokens(cls, tokens: List[int]) -> str:
-        return decode_tokens(tokens, {"tokenizer": cls.name})
-
-    @classmethod
-    def num_tokens(cls, text: str) -> int:
-        return num_tokens(text, {"tokenizer": cls.name})
-
-    @classmethod
-    def estimate_tokens_using_char_count(cls, text: str) -> Tuple[int, int]:
-        return estimate_tokens_using_charcount(text, cls.name)
-
-    @classmethod
-    def get_eos_token(cls) -> str:
-        return CL100K_END_TOKEN_STRING
-
-    @classmethod
-    def get_eos_token_id(cls) -> int:
-        return CL100K_END_TOKEN
-
-    @classmethod
-    def get_header_string_for_message(cls, message: Dict) -> str:
-        return openai_get_header_string_for_message(message, cls.name)
-
-    @classmethod
-    def get_header_tokens_for_message(cls, message: Dict) -> List[int]:
-        return openai_get_header_tokens_for_message(message, cls.name)
-
-    @classmethod
-    def apply_chat_template(cls, messages: List[Dict], options: Optional[Dict] = None) -> str:
-        return openai_chat_messages_to_prompt(messages, cls.name)
-
-    @classmethod
-    def apply_chat_template_tokens(
-        cls, messages: List[Dict], options: Optional[Dict] = None
-    ) -> List[int]:
-        return openai_chat_messages_to_tokens(messages, "cl100k_base")
-
-
-class CL100KSpecialTokensTokenizer(PriomptTokenizer):
-    name = "cl100k_base_special_tokens"
     should_add_eos_token_to_each_message = True
 
     @classmethod
@@ -554,53 +437,6 @@ class CL100KSpecialTokensTokenizer(PriomptTokenizer):
 
 class O200KTokenizer(PriomptTokenizer):
     name = "o200k_base"
-    should_add_eos_token_to_each_message = True
-
-    @classmethod
-    def encode_tokens(cls, text: str) -> List[int]:
-        return encode_tokens(text, {"tokenizer": cls.name})
-
-    @classmethod
-    def decode_tokens(cls, tokens: List[int]) -> str:
-        return decode_tokens(tokens, {"tokenizer": cls.name})
-
-    @classmethod
-    def num_tokens(cls, text: str) -> int:
-        return num_tokens(text, {"tokenizer": cls.name})
-
-    @classmethod
-    def estimate_tokens_using_char_count(cls, text: str) -> Tuple[int, int]:
-        return estimate_tokens_using_charcount(text, cls.name)
-
-    @classmethod
-    def get_eos_token(cls) -> str:
-        return O200K_END_TOKEN_STRING
-
-    @classmethod
-    def get_eos_token_id(cls) -> int:
-        return O200K_END_TOKEN
-
-    @classmethod
-    def get_header_string_for_message(cls, message: Dict) -> str:
-        return openai_get_header_string_for_message(message, cls.name)
-
-    @classmethod
-    def get_header_tokens_for_message(cls, message: Dict) -> List[int]:
-        return openai_get_header_tokens_for_message(message, cls.name)
-
-    @classmethod
-    def apply_chat_template(cls, messages: List[Dict], options: Optional[Dict] = None) -> str:
-        return openai_chat_messages_to_prompt(messages, cls.name)
-
-    @classmethod
-    def apply_chat_template_tokens(
-        cls, messages: List[Dict], options: Optional[Dict] = None
-    ) -> List[int]:
-        return openai_chat_messages_to_tokens(messages, cls.name)
-
-
-class O200KSpecialTokensTokenizer(PriomptTokenizer):
-    name = "o200k_base_special_tokens"
     should_add_eos_token_to_each_message = True
 
     @classmethod

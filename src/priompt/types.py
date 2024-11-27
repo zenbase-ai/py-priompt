@@ -1,30 +1,34 @@
 from __future__ import annotations
-from typing import (
+from typing_extensions import NotRequired, TypeAlias
+from typing import Literal
+
+from beartype.typing import (
     Any,
-    AsyncIterable,
     Callable,
     Dict,
     Generic,
+    Iterable,
     List,
-    Literal,
     Optional,
     TYPE_CHECKING,
     TypedDict,
     TypeVar,
     Union,
 )
-from typing_extensions import NotRequired, TypeAlias
 
 if TYPE_CHECKING:
     from .openai import ChatCompletionResponseMessage, StreamChatCompletionResponse
     from .tokenizer import PriomptTokenizer
 
-T = TypeVar("T", bound=Dict[str, Any])
+T = TypeVar("T")
+DictT = TypeVar("DictT", bound=Dict[str, Any])
 ReturnT = TypeVar("ReturnT")
 PropsT = TypeVar("PropsT", bound=Dict[str, Any])
 
-# JSON Schema type (simplified)
-JSONSchema7: TypeAlias = Dict
+OutputHandler: TypeAlias = Callable[[T, Optional[Dict[str, int]]], None]
+NodeCallback: TypeAlias = Callable[[], None]
+Number: TypeAlias = Union[int, float]
+JSONSchema7: TypeAlias = Dict  # JSON Schema type (simplified)
 
 
 # Basic types for messages
@@ -53,10 +57,8 @@ class BreakToken(TypedDict):
 
 class CaptureProps(TypedDict):
     on_output: NotRequired[OutputHandler["ChatCompletionResponseMessage"]]
-    on_stream: NotRequired[OutputHandler[AsyncIterable["ChatCompletionResponseMessage"]]]
-    on_stream_response_object: NotRequired[
-        OutputHandler[AsyncIterable["StreamChatCompletionResponse"]]
-    ]
+    on_stream: NotRequired[OutputHandler[Iterable["ChatCompletionResponseMessage"]]]
+    on_stream_response_object: NotRequired[OutputHandler[Iterable["StreamChatCompletionResponse"]]]
 
 
 class Capture(CaptureProps):
@@ -64,22 +66,17 @@ class Capture(CaptureProps):
 
 
 class ConfigProps(TypedDict):
-    max_response_tokens: NotRequired[Union[int, Literal["tokensReserved", "tokensRemaining"]]]
+    max_response_tokens: NotRequired[Union[int, Literal["tokens_reserved", "tokens_remaining"]]]
     stop: NotRequired[Union[str, List[str]]]
-
-
-class Config(ConfigProps):
-    type: Literal["config"]
 
 
 class IsolateProps(TypedDict):
     token_limit: int
 
 
-class ImageProps(TypedDict):
-    bytes: bytes
-    detail: Literal["low", "high", "auto"]
-    dimensions: Dict[str, int]
+class ImageDimensions(TypedDict):
+    width: Number
+    height: Number
 
 
 class Isolate(IsolateProps):
@@ -88,21 +85,36 @@ class Isolate(IsolateProps):
     cached_render_output: NotRequired[RenderOutput]
 
 
-class ChatImage(ImageProps):
+class ChatImage(TypedDict):
     type: Literal["image"]
+    bytes: bytes
+    detail: Literal["low", "high", "auto"]
+    dimensions: ImageDimensions
+
+
+class ScopeProps(TypedDict):
+    name: NotRequired[str]
+    p: NotRequired[Number]
+    prel: NotRequired[Number]
+    on_eject: NotRequired[Callable[[], None]]
+    on_include: NotRequired[Callable[[], None]]
 
 
 class Scope(TypedDict):
     type: Literal["scope"]
     children: List[Node]
-    absolute_priority: Optional[int]
-    relative_priority: Optional[int]
+    absolute_priority: Optional[Number]
+    relative_priority: Optional[Number]
     name: NotRequired[str]
     on_eject: NotRequired[Callable[[], None]]
     on_include: NotRequired[Callable[[], None]]
 
 
-class ChatUserSystemMessage(TypedDict):
+class Config(ConfigProps, Scope):
+    type: Literal["config"]
+
+
+class ChatUserSystemMessage(Scope):
     type: Literal["chat"]
     role: Literal["user", "system"]
     name: NotRequired[str]
@@ -110,12 +122,12 @@ class ChatUserSystemMessage(TypedDict):
     children: List[Node]
 
 
-class ChatAssistantFunctionToolCall(TypedDict):
+class ChatAssistantFunctionToolCall(Scope):
     type: Literal["function"]
     function: Dict[str, str]  # name and arguments as json string
 
 
-class ChatAssistantMessage(TypedDict):
+class ChatAssistantMessage(Scope):
     type: Literal["chat"]
     role: Literal["assistant"]
     to: NotRequired[str]
@@ -124,7 +136,7 @@ class ChatAssistantMessage(TypedDict):
     tool_calls: NotRequired[List[Dict[str, Union[int, str, ChatAssistantFunctionToolCall]]]]
 
 
-class ChatFunctionResultMessage(TypedDict):
+class ChatFunctionResultMessage(Scope):
     type: Literal["chat"]
     role: Literal["function"]
     name: str
@@ -132,7 +144,7 @@ class ChatFunctionResultMessage(TypedDict):
     children: List[Node]
 
 
-class ChatToolResultMessage(TypedDict):
+class ChatToolResultMessage(Scope):
     type: Literal["chat"]
     role: Literal["tool"]
     name: str
@@ -165,7 +177,7 @@ class ToolDefinition(TypedDict):
     tool: FunctionToolDefinition
 
 
-Node = Union[
+Node: TypeAlias = Union[
     FunctionDefinition,
     ToolDefinition,
     BreakToken,
@@ -183,46 +195,29 @@ Node = Union[
     bool,
 ]
 
-PromptElement = Union[List[Node], Node]
+PromptElement: TypeAlias = Union[List[Node], Node]
 
 
 class BaseProps(TypedDict, total=False):
     """Base properties for prompt elements."""
 
-    p: float  # absolute priority, max 1e6
-    prel: float  # relative priority
+    p: Number  # absolute priority, max 1e6
+    prel: Number  # relative priority
     name: str  # label for debugging purposes
-    children: Union["PromptElement", List["PromptElement"]]
+    children: Union[PromptElement, Iterable[PromptElement]]
     on_eject: Callable[[], None]
     on_include: Callable[[], None]
 
 
-class ReturnProps(TypedDict, Generic[ReturnT]):
-    """Properties for handling return values."""
-
-    on_return: OutputHandler[ReturnT]
-
-
-class PromptProps(BaseProps, Generic[PropsT, ReturnT]):
-    """
-    Combined prompt properties with optional type parameters.
-    T: Additional properties type (defaults to empty dict)
-    ReturnT: Return type for on_return handler (defaults to Never/NoReturn)
-    """
-
-    props: NotRequired[PropsT]  # Additional type-specific properties
-    on_return: NotRequired[OutputHandler[ReturnT]]  # Return handler
-
-
 # Chat message types
-class ChatPromptSystemMessage(TypedDict):
+class ChatPromptSystemMessage(Scope):
     role: Literal["system"]
     name: NotRequired[str]
     to: NotRequired[str]
     content: Union[str, List[str]]
 
 
-class ChatPromptUserMessage(TypedDict):
+class ChatPromptUserMessage(Scope):
     role: Literal["user"]
     name: NotRequired[str]
     to: NotRequired[str]
@@ -230,7 +225,7 @@ class ChatPromptUserMessage(TypedDict):
     images: NotRequired[List[ImagePromptContent]]
 
 
-class ChatPromptAssistantMessage(TypedDict):
+class ChatPromptAssistantMessage(Scope):
     role: Literal["assistant"]
     to: NotRequired[str]
     content: NotRequired[Union[str, List[str]]]
@@ -238,14 +233,14 @@ class ChatPromptAssistantMessage(TypedDict):
     tool_calls: NotRequired[List[Dict[str, Union[int, str, ChatAssistantFunctionToolCall]]]]
 
 
-class ChatPromptFunctionResultMessage(TypedDict):
+class ChatPromptFunctionResultMessage(Scope):
     role: Literal["function"]
     name: str
     to: NotRequired[str]
     content: Union[str, List[str]]
 
 
-class ChatPromptToolResultMessage(TypedDict):
+class ChatPromptToolResultMessage(Scope):
     role: Literal["tool"]
     name: NotRequired[str]
     to: NotRequired[str]
@@ -312,9 +307,7 @@ class ToolPrompt(TypedDict):
     tools: List[ChatAndToolPromptToolFunction]
 
 
-OutputHandler = Callable[[T, Optional[Dict[str, int]]], None]
-
-RenderedPrompt = Union[
+RenderedPrompt: TypeAlias = Union[
     PromptString,
     ChatPrompt,
     Dict[str, Union[ChatPrompt, FunctionPrompt]],
@@ -328,9 +321,7 @@ RenderedPrompt = Union[
 class Prompt(Generic[PropsT, ReturnT]):
     config: Optional[PreviewConfig[PropsT, ReturnT]]
 
-    def __call__(
-        self, props: PromptProps[PropsT, ReturnT]
-    ) -> Union[PromptElement, AsyncIterable[PromptElement]]: ...
+    def __call__(self, props: Dict) -> Union[PromptElement, Iterable[PromptElement]]: ...
 
 
 class PreviewConfig(TypedDict, Generic[PropsT, ReturnT]):
@@ -373,10 +364,8 @@ class RenderOutput(TypedDict):
     tokens_reserved: int
     priority_cutoff: int
     output_handlers: List[OutputHandler["ChatCompletionResponseMessage"]]
-    stream_handlers: List[OutputHandler[AsyncIterable["ChatCompletionResponseMessage"]]]
-    stream_response_object_handlers: List[
-        OutputHandler[AsyncIterable["StreamChatCompletionResponse"]]
-    ]
+    stream_handlers: List[OutputHandler[Iterable["ChatCompletionResponseMessage"]]]
+    stream_response_object_handlers: List[OutputHandler[Iterable["StreamChatCompletionResponse"]]]
     config: ConfigProps
     duration_ms: NotRequired[int]
     source_map: NotRequired[SourceMap]

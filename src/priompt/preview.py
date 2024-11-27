@@ -1,6 +1,14 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, TypeVar
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    TypeVar,
+    TypedDict,
+    Union,
+)
 import asyncio
 import os
 
@@ -9,14 +17,15 @@ import ujson
 
 from .lib import render
 from .tokenizer import get_tokenizer_by_name_only_for_openai_tokenizers, UsableTokenizer
-from .types import PreviewConfig, Prompt, PromptElement, RenderOutput
+
+if TYPE_CHECKING:
+    from .types import PreviewConfig, Prompt, PromptElement, RenderOutput
 
 T = TypeVar("T")
 ReturnT = TypeVar("ReturnT")
 
 
-@dataclass
-class PreviewManagerGetPromptQuery:
+class PreviewManagerGetPromptQuery(TypedDict):
     prompt_id: str
     props_id: str
     token_limit: int
@@ -24,22 +33,19 @@ class PreviewManagerGetPromptQuery:
     should_build_source_map: bool
 
 
-@dataclass
-class PreviewManagerGetRemotePromptQuery:
+class PreviewManagerGetRemotePromptQuery(TypedDict):
     prompt_id: str
     prompt_dump: str
     token_limit: int
     tokenizer: "UsableTokenizer"
 
 
-@dataclass
-class PreviewManagerGetRemotePropsQuery:
+class PreviewManagerGetRemotePropsQuery(TypedDict):
     prompt_id: str
     prompt_dump: str
 
 
-@dataclass
-class PreviewManagerGetPromptOutputQuery:
+class PreviewManagerGetPromptOutputQuery(TypedDict):
     prompt_id: str
     props_id: str
     token_limit: int
@@ -49,13 +55,11 @@ class PreviewManagerGetPromptOutputQuery:
     should_build_source_map: bool
 
 
-@dataclass
-class LiveModeOutput:
+class LiveModeOutput(TypedDict):
     live_mode_id: str
 
 
-@dataclass
-class LiveModeData:
+class LiveModeData(TypedDict):
     live_mode_id: str
     prompt_element: "PromptElement"
 
@@ -102,12 +106,12 @@ def default_yaml_load(dump: str) -> Any:
 class PreviewManagerImpl:
     def __init__(self):
         self.should_dump = os.environ.get("ENV") == "development"
-        self.previews: Dict[str, PreviewConfig] = {}
+        self.previews: Dict[str, "PreviewConfig"] = {}
         self.last_live_mode_data: Optional[LiveModeData] = None
         self.last_live_mode_output_event = asyncio.Event()
         self.live_mode_result_future: Optional[asyncio.Future] = None
 
-    def get_config(self, prompt_id: str) -> PreviewConfig:
+    def get_config(self, prompt_id: str) -> "PreviewConfig":
         return self.previews[prompt_id]
 
     def get_previews(self) -> Dict[str, Dict[str, List[str]]]:
@@ -125,7 +129,7 @@ class PreviewManagerImpl:
             result[prompt_id] = {"dumps": props_ids, "saved": saved_ids}
         return result
 
-    def get_prompt(self, query: PreviewManagerGetPromptQuery) -> RenderOutput:
+    def get_prompt(self, query: PreviewManagerGetPromptQuery) -> "RenderOutput":
         element = self.get_element(query.prompt_id, query.props_id)
 
         return render(

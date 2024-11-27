@@ -2,7 +2,6 @@ from typing import List
 
 from priompt import (
     PromptElement,
-    PromptProps,
     render,
     SourceMap,
     SystemMessage,
@@ -53,9 +52,12 @@ def absolutify_source_map(source_map: SourceMap, offset: int = 0) -> SourceMap:
     }
 
 
-def trivial_messages(props: PromptProps) -> PromptElement:
+def trivial_messages(message: str) -> PromptElement:
     """Simple test prompt with system and user messages."""
-    return [SystemMessage(props["message"]), UserMessage(["Testing sourcemap!", "\n", "abcdef"])]
+    return [
+        SystemMessage(message),
+        UserMessage(["Testing sourcemap!", "\n", "abcdef"]),
+    ]
 
 
 def emoji_and_japanese_messages() -> PromptElement:
@@ -63,22 +65,20 @@ def emoji_and_japanese_messages() -> PromptElement:
     return [
         SystemMessage("🫨"),
         UserMessage(
-            [
-                {"type": "scope", "name": "lemon", "children": ["🍋"]},
-                {"type": "scope", "name": "japanese", "children": ["これはレモン"]},
-            ]
+            {"type": "scope", "name": "lemon", "children": ["🍋"]},
+            {"type": "scope", "name": "japanese", "children": ["これはレモン"]},
         ),
     ]
 
 
-def complex_messages(props: PromptProps) -> PromptElement:
+def complex_messages(message: str) -> PromptElement:
     """Complex test prompt with nested scopes and multiple messages."""
-    lines = props["message"].split("\n")
+    lines = message.split("\n")
 
     return [
         SystemMessage("The System Message"),
         UserMessage(
-            children=[
+            [
                 {
                     "type": "scope",
                     "name": "the first line",
@@ -108,7 +108,7 @@ def complex_messages(props: PromptProps) -> PromptElement:
                     "name": "code",
                     "children": [
                         "const rendered = await render(TestPromptSplit(props.message))",
-                        'tokenLimit: 100, tokenizer: getTokenizerByName("cl100k_base"),',
+                        'token_limit: 100, tokenizer: getTokenizerByName("cl100k_base"),',
                         "buildSourceMap: true,",
                     ],
                 },
@@ -120,7 +120,6 @@ def complex_messages(props: PromptProps) -> PromptElement:
                         'const promptString = Priompt.promptToString_VULNERABLE_TO_PROMPT_INJECTION(rendered.prompt, getTokenizerByName("cl100k_base")) const sourceMap = rendered.sourceMap'
                     ],
                 },
-                # ... rest of the scopes similar to JS version
             ]
         ),
     ]
@@ -129,7 +128,7 @@ def complex_messages(props: PromptProps) -> PromptElement:
 def test_simple_sourcemap():
     """Test simple source map generation."""
     rendered = render(
-        trivial_messages({"message": "System message for sourcemap test."}),
+        trivial_messages("System message for sourcemap test."),
         {
             "token_limit": 1000,
             "tokenizer": get_tokenizer_by_name_only_for_openai_tokenizers("cl100k_base"),
@@ -187,7 +186,7 @@ def test_complex_sourcemap():
     """
 
     rendered = render(
-        complex_messages({"message": message}),
+        complex_messages(message),
         {
             "token_limit": 300,
             "tokenizer": get_tokenizer_by_name_only_for_openai_tokenizers("cl100k_base"),

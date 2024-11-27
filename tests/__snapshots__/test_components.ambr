@@ -1,0 +1,834 @@
+# serializer version: 1
+# name: test_complex_prompt_with_nested_elements
+  dict({
+    'config': dict({
+      'max_response_tokens': None,
+      'stop': None,
+    }),
+    'output_handlers': list([
+    ]),
+    'priority_cutoff': 500,
+    'prompt': dict({
+      'functions': list([
+        dict({
+          'description': 'A test function',
+          'name': 'testFunction',
+          'parameters': dict({
+            'properties': dict({
+              'param1': dict({
+                'type': 'string',
+              }),
+              'param2': dict({
+                'type': 'number',
+              }),
+            }),
+            'required': list([
+              'param1',
+            ]),
+            'type': 'object',
+          }),
+        }),
+      ]),
+      'messages': list([
+        dict({
+          'content': '''
+            This is a complex system message with high priority content and medium priority content.
+            New line in system message.
+          ''',
+          'role': 'system',
+        }),
+        dict({
+          'content': list([
+            'User message with a ',
+            '''
+               break and 
+               line break.Image with some text
+            ''',
+          ]),
+          'images': list([
+            dict({
+              'image_url': dict({
+                'detail': 'auto',
+                'dimensions': dict({
+                  'height': 768,
+                  'width': 768,
+                }),
+                'url': 'data:image/png;base64,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',
+              }),
+              'type': 'image_url',
+            }),
+          ]),
+          'role': 'user',
+        }),
+        dict({
+          'content': list([
+            'Assistant response with lower priority information',
+            'After break token in assistant message',
+          ]),
+          'role': 'assistant',
+        }),
+        dict({
+          'content': '''
+            Function result with nested scopes:Highest priorityMedium priority
+            New line in function message
+          ''',
+          'name': 'testFunction',
+          'role': 'function',
+        }),
+        dict({
+          'content': '''
+            Message 1 in array
+  
+          ''',
+          'role': 'user',
+        }),
+        dict({
+          'content': list([
+            'Message 2 in arrayEven numbered message',
+            '''
+              After break in even message
+  
+            ''',
+          ]),
+          'role': 'user',
+        }),
+        dict({
+          'content': '''
+            Message 3 in array
+  
+          ''',
+          'role': 'user',
+        }),
+      ]),
+      'type': 'chat',
+    }),
+    'source_map': dict({
+      'children': list([
+        dict({
+          'children': list([
+            dict({
+              'end': 28,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 38,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'This is a complex system message with ',
+                }),
+                dict({
+                  'children': None,
+                  'end': 59,
+                  'name': '1.None.0',
+                  'start': 38,
+                }),
+                dict({
+                  'children': None,
+                  'end': 64,
+                  'name': '2',
+                  'start': 59,
+                  'string': ' and ',
+                }),
+                dict({
+                  'children': None,
+                  'end': 87,
+                  'name': '3.None.0',
+                  'start': 64,
+                }),
+                dict({
+                  'children': None,
+                  'end': 88,
+                  'name': '4',
+                  'start': 87,
+                  'string': '.',
+                }),
+                dict({
+                  'children': None,
+                  'end': 89,
+                  'name': '5.None.0',
+                  'start': 88,
+                }),
+                dict({
+                  'children': None,
+                  'end': 116,
+                  'name': '6',
+                  'start': 89,
+                  'string': 'New line in system message.',
+                }),
+              ]),
+              'end': 144,
+              'name': 'system-message',
+              'start': 28,
+            }),
+            dict({
+              'end': 154,
+              'name': 'eos',
+              'start': 144,
+            }),
+          ]),
+          'end': 154,
+          'name': '0.None.chat',
+          'start': 0,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 26,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 20,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'User message with a ',
+                }),
+                dict({
+                  'children': None,
+                  'end': 31,
+                  'name': '2',
+                  'start': 20,
+                  'string': ' break and ',
+                }),
+                dict({
+                  'children': None,
+                  'end': 32,
+                  'name': '3.None.0',
+                  'start': 31,
+                }),
+                dict({
+                  'children': None,
+                  'end': 44,
+                  'name': '4',
+                  'start': 32,
+                  'string': ' line break.',
+                }),
+                dict({
+                  'children': None,
+                  'end': 64,
+                  'name': '5.None.1',
+                  'start': 44,
+                }),
+              ]),
+              'end': 90,
+              'name': 'user-message',
+              'start': 26,
+            }),
+            dict({
+              'end': 100,
+              'name': 'eos',
+              'start': 90,
+            }),
+          ]),
+          'end': 254,
+          'name': '1.None.chat',
+          'start': 154,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 31,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 24,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'Assistant response with ',
+                }),
+                dict({
+                  'children': None,
+                  'end': 50,
+                  'name': '1.None.0',
+                  'start': 24,
+                }),
+                dict({
+                  'children': None,
+                  'end': 88,
+                  'name': '3',
+                  'start': 50,
+                  'string': 'After break token in assistant message',
+                }),
+              ]),
+              'end': 119,
+              'name': 'assistant-message',
+              'start': 31,
+            }),
+            dict({
+              'end': 129,
+              'name': 'eos',
+              'start': 119,
+            }),
+          ]),
+          'end': 383,
+          'name': '2.None.chat',
+          'start': 254,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 0,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 35,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'Function result with nested scopes:',
+                }),
+                dict({
+                  'children': list([
+                    dict({
+                      'children': None,
+                      'end': 16,
+                      'name': '0.scope.0',
+                      'start': 0,
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 31,
+                      'name': '1',
+                      'start': 16,
+                      'string': 'Medium priority',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 32,
+                      'name': '2.None.0',
+                      'start': 31,
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 60,
+                      'name': '3',
+                      'start': 32,
+                      'string': 'New line in function message',
+                    }),
+                  ]),
+                  'end': 95,
+                  'name': '1.None',
+                  'start': 35,
+                }),
+              ]),
+              'end': 95,
+              'name': 'function-message',
+              'start': 0,
+            }),
+            dict({
+              'end': 105,
+              'name': 'eos',
+              'start': 95,
+            }),
+          ]),
+          'end': 488,
+          'name': '4.testFunction.chat',
+          'start': 383,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 26,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 18,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'Message 1 in array',
+                }),
+                dict({
+                  'children': None,
+                  'end': 19,
+                  'name': '2.None.0',
+                  'start': 18,
+                }),
+              ]),
+              'end': 45,
+              'name': 'user-message',
+              'start': 26,
+            }),
+            dict({
+              'end': 55,
+              'name': 'eos',
+              'start': 45,
+            }),
+          ]),
+          'end': 543,
+          'name': '5.None.chat',
+          'start': 488,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 26,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 18,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'Message 2 in array',
+                }),
+                dict({
+                  'children': list([
+                    dict({
+                      'children': None,
+                      'end': 21,
+                      'name': '0',
+                      'start': 0,
+                      'string': 'Even numbered message',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 48,
+                      'name': '2',
+                      'start': 21,
+                      'string': 'After break in even message',
+                    }),
+                  ]),
+                  'end': 66,
+                  'name': '1.None',
+                  'start': 18,
+                }),
+                dict({
+                  'children': None,
+                  'end': 67,
+                  'name': '2.None.0',
+                  'start': 66,
+                }),
+              ]),
+              'end': 93,
+              'name': 'user-message',
+              'start': 26,
+            }),
+            dict({
+              'end': 103,
+              'name': 'eos',
+              'start': 93,
+            }),
+          ]),
+          'end': 646,
+          'name': '6.None.chat',
+          'start': 543,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 26,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 18,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'Message 3 in array',
+                }),
+                dict({
+                  'children': None,
+                  'end': 19,
+                  'name': '2.None.0',
+                  'start': 18,
+                }),
+              ]),
+              'end': 45,
+              'name': 'user-message',
+              'start': 26,
+            }),
+            dict({
+              'end': 55,
+              'name': 'eos',
+              'start': 45,
+            }),
+          ]),
+          'end': 701,
+          'name': '7.None.chat',
+          'start': 646,
+        }),
+      ]),
+      'end': 701,
+      'name': 'root',
+      'start': 0,
+    }),
+    'stream_handlers': list([
+    ]),
+    'stream_response_object_handlers': list([
+    ]),
+    'token_count': 599,
+    'token_limit': 1000,
+    'tokenizer': CL100KTokenizer(
+      name='cl100k_base',
+      should_add_eos_token_to_each_message=True,
+    ),
+    'tokens_reserved': 5,
+  })
+# ---
+# name: test_nested_arrays_and_first_elements
+  dict({
+    'config': dict({
+      'max_response_tokens': None,
+      'stop': None,
+    }),
+    'output_handlers': list([
+    ]),
+    'priority_cutoff': 600,
+    'prompt': dict({
+      'messages': list([
+        dict({
+          'content': '''
+            System message for nested arrays test
+            New line in system message
+          ''',
+          'role': 'system',
+        }),
+        dict({
+          'content': list([
+            'Nested array message 1',
+            'After break in nested messageFirst choice for 1',
+          ]),
+          'role': 'user',
+        }),
+        dict({
+          'content': list([
+            'Nested array message 2',
+            'After break in nested messageFirst choice for 2',
+          ]),
+          'role': 'user',
+        }),
+        dict({
+          'content': list([
+            'Nested array message 3',
+            'After break in nested messageFirst choice for 3',
+          ]),
+          'role': 'user',
+        }),
+        dict({
+          'content': list([
+            'Nested array message 4',
+            'After break in nested messageFirst choice for 4',
+          ]),
+          'role': 'user',
+        }),
+        dict({
+          'content': list([
+            'High priority assistant response',
+            'After break in high priority',
+          ]),
+          'role': 'assistant',
+        }),
+      ]),
+      'type': 'chat',
+    }),
+    'source_map': dict({
+      'children': list([
+        dict({
+          'children': list([
+            dict({
+              'end': 28,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 37,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'System message for nested arrays test',
+                }),
+                dict({
+                  'children': None,
+                  'end': 38,
+                  'name': '1.None.0',
+                  'start': 37,
+                }),
+                dict({
+                  'children': None,
+                  'end': 64,
+                  'name': '2',
+                  'start': 38,
+                  'string': 'New line in system message',
+                }),
+              ]),
+              'end': 92,
+              'name': 'system-message',
+              'start': 28,
+            }),
+            dict({
+              'end': 102,
+              'name': 'eos',
+              'start': 92,
+            }),
+          ]),
+          'end': 102,
+          'name': '0.None.chat',
+          'start': 0,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'children': list([
+                dict({
+                  'end': 26,
+                  'name': 'header',
+                  'start': 0,
+                }),
+                dict({
+                  'children': list([
+                    dict({
+                      'children': None,
+                      'end': 22,
+                      'name': '0',
+                      'start': 0,
+                      'string': 'Nested array message 1',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 51,
+                      'name': '2',
+                      'start': 22,
+                      'string': 'After break in nested message',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 69,
+                      'name': '3.0.None.0',
+                      'start': 51,
+                    }),
+                  ]),
+                  'end': 95,
+                  'name': 'user-message',
+                  'start': 26,
+                }),
+                dict({
+                  'end': 105,
+                  'name': 'eos',
+                  'start': 95,
+                }),
+              ]),
+              'end': 105,
+              'name': '0.None.chat',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'end': 26,
+                  'name': 'header',
+                  'start': 0,
+                }),
+                dict({
+                  'children': list([
+                    dict({
+                      'children': None,
+                      'end': 22,
+                      'name': '0',
+                      'start': 0,
+                      'string': 'Nested array message 2',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 51,
+                      'name': '2',
+                      'start': 22,
+                      'string': 'After break in nested message',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 69,
+                      'name': '3.0.None.0',
+                      'start': 51,
+                    }),
+                  ]),
+                  'end': 95,
+                  'name': 'user-message',
+                  'start': 26,
+                }),
+                dict({
+                  'end': 105,
+                  'name': 'eos',
+                  'start': 95,
+                }),
+              ]),
+              'end': 210,
+              'name': '1.None.chat',
+              'start': 105,
+            }),
+          ]),
+          'end': 312,
+          'name': '1.None',
+          'start': 102,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'children': list([
+                dict({
+                  'end': 26,
+                  'name': 'header',
+                  'start': 0,
+                }),
+                dict({
+                  'children': list([
+                    dict({
+                      'children': None,
+                      'end': 22,
+                      'name': '0',
+                      'start': 0,
+                      'string': 'Nested array message 3',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 51,
+                      'name': '2',
+                      'start': 22,
+                      'string': 'After break in nested message',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 69,
+                      'name': '3.0.None.0',
+                      'start': 51,
+                    }),
+                  ]),
+                  'end': 95,
+                  'name': 'user-message',
+                  'start': 26,
+                }),
+                dict({
+                  'end': 105,
+                  'name': 'eos',
+                  'start': 95,
+                }),
+              ]),
+              'end': 105,
+              'name': '0.None.chat',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'end': 26,
+                  'name': 'header',
+                  'start': 0,
+                }),
+                dict({
+                  'children': list([
+                    dict({
+                      'children': None,
+                      'end': 22,
+                      'name': '0',
+                      'start': 0,
+                      'string': 'Nested array message 4',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 51,
+                      'name': '2',
+                      'start': 22,
+                      'string': 'After break in nested message',
+                    }),
+                    dict({
+                      'children': None,
+                      'end': 69,
+                      'name': '3.0.None.0',
+                      'start': 51,
+                    }),
+                  ]),
+                  'end': 95,
+                  'name': 'user-message',
+                  'start': 26,
+                }),
+                dict({
+                  'end': 105,
+                  'name': 'eos',
+                  'start': 95,
+                }),
+              ]),
+              'end': 210,
+              'name': '1.None.chat',
+              'start': 105,
+            }),
+          ]),
+          'end': 522,
+          'name': '2.None',
+          'start': 312,
+        }),
+        dict({
+          'children': list([
+            dict({
+              'end': 31,
+              'name': 'header',
+              'start': 0,
+            }),
+            dict({
+              'children': list([
+                dict({
+                  'children': None,
+                  'end': 32,
+                  'name': '0',
+                  'start': 0,
+                  'string': 'High priority assistant response',
+                }),
+                dict({
+                  'children': None,
+                  'end': 60,
+                  'name': '2',
+                  'start': 32,
+                  'string': 'After break in high priority',
+                }),
+              ]),
+              'end': 91,
+              'name': 'assistant-message.0.0.None',
+              'start': 31,
+            }),
+          ]),
+          'end': 613,
+          'name': '3.None.chat',
+          'start': 522,
+        }),
+      ]),
+      'end': 613,
+      'name': 'root',
+      'start': 0,
+    }),
+    'stream_handlers': list([
+    ]),
+    'stream_response_object_handlers': list([
+    ]),
+    'token_count': 108,
+    'token_limit': 1000,
+    'tokenizer': CL100KTokenizer(
+      name='cl100k_base',
+      should_add_eos_token_to_each_message=True,
+    ),
+    'tokens_reserved': 0,
+  })
+# ---

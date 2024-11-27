@@ -19,7 +19,7 @@ import time
 
 import ujson
 
-from priompt.types import ToolDefinition
+from priompt.types import FunctionDefinition, ToolDefinition
 
 from .openai import (
     CHATML_PROMPT_EXTRA_TOKEN_COUNT_CONSTANT,
@@ -2708,18 +2708,6 @@ def count_msg_tokens_fast(message: ChatPromptMessage, tokenizer: PriomptTokenize
                 )
         return num_tokens
 
-    stringified_function = ujson.dumps(
-        {
-            "name": func["name"],
-            "description": func["description"],
-            "parameters": func["parameters"],
-        },
-        indent=2,
-    )
-    # Multiply by 1.5 and add 10 to be safe until more testing
-    raw = tokenizer.num_tokens(stringified_function)
-    return math.ceil(raw * 1.5) + 10
-
 
 def count_tool_tokens_approx(tool: ToolDefinition, tokenizer: PriomptTokenizer) -> int:
     stringified_tool = ujson.dumps(
@@ -2731,7 +2719,7 @@ def count_tool_tokens_approx(tool: ToolDefinition, tokenizer: PriomptTokenizer) 
         indent=2,
     )
     # Multiply by 1.5 and add 10 to be safe until more testing
-    raw = tokenizer.num_tokens(stringified_tool)
+    raw = tokenizer.estimate_tokens_fast(stringified_tool)
     return math.ceil(raw * 1.5) + 10
 
 
@@ -2784,3 +2772,18 @@ def count_tokens_approx_fast(
         tokens += sum(tool_tokens)
 
     return tokens
+
+
+def count_function_tokens_approx(func: FunctionDefinition, tokenizer: PriomptTokenizer) -> int:
+    """Count tokens in a function definition (approximate)."""
+    stringified_function = ujson.dumps(
+        {
+            "name": func["name"],
+            "description": func["description"],
+            "parameters": func["parameters"],
+        },
+        indent=2,
+    )
+    # Multiply by 1.5 and add 10 to be safe until more testing
+    raw = tokenizer.estimate_tokens_fast(stringified_function)
+    return math.ceil(raw * 1.5) + 10

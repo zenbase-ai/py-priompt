@@ -1,10 +1,10 @@
 # PyPriompt
 
-PyPriompt (_Python + priority + prompt_) is a Python port of the [Priompt](https://github.com/anysphere/priompt) library. It uses priorities to decide what to include in the context window.
+PyPriompt (_Python + priority + prompt_) is a Python port of the [Priompt](https://github.com/anysphere/priompt) library remixed with [FastHTML](https://github.com/AnswerDotAI/fasthtml). It uses priorities to decide what to include in the context window.
 
 Priompt is an attempt at a _prompt design_ library, inspired by web design libraries like React and FastHTML. Read more about the motivation [here](https://arvid.xyz/prompt-design).
 
-_Note: Although the original test suite passes, this was ported in a day with the help of Cursor AI, so there may be bugs. Please open an issue if you find any!_
+_Note: The original test suite passes, but this was ported in a day with the help of Cursor AI, so there may be bugs. Please open an issue if you find any!_
 
 ## Installation
 

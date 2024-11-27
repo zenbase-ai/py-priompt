@@ -1,6 +1,6 @@
 [project]
 name = "priompt"
-version = "0.1.1"
+version = "0.1.2"
 description = "Priompt (priority + prompt) is prompting library. It uses priorities to decide what to include in the context window."
 authors = [{ name = "Cyrus Nouroozi", email = "cyrus@zenbase.ai" }]
 dependencies = [
